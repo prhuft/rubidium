@@ -34,8 +34,7 @@ def hf_coupling(F,mF,J,q,FF,mFF,JJ,I,RME=None):
                 *clebsch_gordan(1,F,FF,q,mF,mFF)
     
     return mat_elem
-
-
+	
 
 # syntactic sugar and convenience functions
 
