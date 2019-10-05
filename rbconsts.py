@@ -18,3 +18,5 @@ Isat = (5/7)*(hbar*gamma_D2*omega_D2**3
 ## reduced matrix elements from Steck
 D2_MatElem = 3.584e-29 # <J=1/2||er||J'=3/2> [C*m]
 D1_MatElem = 2.537e-29 # <J=1/2||er||J'=1/2> [C*m]
+
+## TODO: add rb energies in a tabular way... maybe call by state
