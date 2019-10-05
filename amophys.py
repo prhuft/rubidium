@@ -32,14 +32,17 @@ def gJ_fn(J,L,S,gL,gS):
 	return (gL*(J*(J+1)+L*(L+1)-S*(S+1)) 
 			+gS*(J*(J+1)-L*(L+1)+S*(S+1)))/(2*J*(J+1))
 
-def hf_zeeman(states,gJ,gI,Bz=None,units=None):
+def hf_zeeman(states,gJ,gI,Bz=None,units='Joules'):
 	""" Return Zeeman Hamiltonian in hyperfine basis |L J I F mF>. Assumes the 
 		field is along the z axis, i.e. q = 0.
 
 		'states': list-like, pair of quantum states given by [I,J,F,mF,FF,mFF]
 		If Bz is none initially, the sympy free_symbol is the magnetic dipole energy,
-		uB*B, not just B.
-	
+		uB*B, not just B. 
+		
+		'units': 'Joules' (default), 'eV', 'UB' (units of the magnetic dipole 
+		energy).
+		
 		From Mark's notes for the general hf Zeeman matrix elements. Units
 		are determined by UB. Could implement decorator function to change
 		units.
@@ -47,13 +50,14 @@ def hf_zeeman(states,gJ,gI,Bz=None,units=None):
 		
 	## TODO: build in better unit functionality
 	
-	UB = symbols('U_B') # assume symbolic B field P.E. for now
+	# if Bz is not None:
+		# UB = uB*Bz# magnetic field potential energy; [J] by default
 
-	if Bz is not None:
-		UB = uB*Bz# magnetic field potential energy
-
-	if units == 'UB':
-		UB = 1
+	# if units == 'Joules':
+		# pass
+	# elif units == 'eV':
+	# elif units == 'UB':
+		# UB = 1
 		
 	I,J,F,mF,FF,mFF = states
 	q = 0 # assume B = Bz for now
@@ -68,8 +72,23 @@ def hf_zeeman(states,gJ,gI,Bz=None,units=None):
 				*wigner_6j(I,J,F,FF,1,I))) 
 		# N() is used to ensure diagnolization doesn't get tripped up
 
-	return UB*elem
-	
+	if Bz is not None:
+		elem *= uB*Bz # hmm check the sign
+		if units == 'Joules':
+			return elem
+		elif units == 'eV':
+			return JToeV(elem)
+		else:
+			print(f"invalid unit [{units}] for non-zero Bz. Result in 'J'.")
+			return elem
+	else: 
+		if units == 'UB':
+			return elem
+		else:
+			UB = symbols('U_B') # symbolic B field P.E. for now
+			elem*= UB
+			return elem
+			
 def hf_coupling(F,mF,J,q,FF,mFF,JJ,I,RME=None):
 	""" Returns the matrix element <F,mF,J|T_q|F',mF',J'>. 
 		'RME': the reduced matrix element, e.g. the D2 line matrix
@@ -90,10 +109,12 @@ def hf_coupling(F,mF,J,q,FF,mFF,JJ,I,RME=None):
 
 	return mat_elem
 	
-def hamiltonian_z1(basis,gI,gJ,Bz=None,I=1.5,J=.5):
+def hamiltonian_z1(basis,gI,gJ,Bz=None,I=1.5,J=.5,units='Joules'):
 	""" returns the hf zeeman hamiltonian Z1 for a provided basis.
 		'Bz': the field strength [T]. None by default, then hamiltonian
 		can be lambdified for the field energy UB = - muB*Bz. 
+		
+		'units': 'Joules','eV', more depending on matrix elem call 
 		
 		For now, assumes 87Rb (I = 3/2) ground states (J=1/2)
 	"""
@@ -109,7 +130,7 @@ def hamiltonian_z1(basis,gI,gJ,Bz=None,I=1.5,J=.5):
 			FF,mFF = state_j
 			states = [I,J,F,mF,FF,mFF]
 			try:
-				H_Zz[i,j] = hf_zeeman(states,gJ,gI,Bz)
+				H_Zz[i,j] = hf_zeeman(states,gJ,gI,Bz=Bz,units=units)
 			except:
 				print("Failed: %s" % states)
 				print(gJ,gI,Bz)
@@ -154,37 +175,6 @@ def alpha0(w_ab,w,I,RME=None):
 		RME = 1 # the light shift is now in units of the RME
 
 	return -(ee**2)*w_ab*cc(RME)*RME*I/(2*hbar*(w_ab**2-w**2))
-	
-#### Conversions
-
-def radToTHz(w):
-    return w/(2*pi*1e12)
-
-def radToGHz(w):
-    return w/(2*pi*1e9)
-
-def radToMhz(w):
-    return w/(2*pi*1e6) 
-
-def radTokHz(w):
-    return w/(2*pi*1e3)
-
-def JToeV(u):
-    global ee
-    return u/ee
-
-def eVToJ(u):
-    global ee
-    return u*ee
-
-def GHzToeV(nu):
-    global hbar
-    return JToeV(2*pi*hbar*nu*1e9)
-
-def eVToGHz(u):
-    global hbar
-    return eVToJ(u)/(2*pi*hbar*1e9)
-
 	
 #### Quantum Physics
 
@@ -244,6 +234,35 @@ def diagonal(mat):
 	except:
 		print("make sure that the matrix is numeric")
 		return D
-	
+		
+#### Conversions
+
+def radToTHz(w):
+	return w/(2*pi*1e12)
+
+def radToGHz(w):
+	return w/(2*pi*1e9)
+
+def radToMhz(w):
+	return w/(2*pi*1e6) 
+
+def radTokHz(w):
+	return w/(2*pi*1e3)
+
+def JToeV(u):
+	global ee
+	return u/ee
+
+def eVToJ(u):
+	global ee
+	return u*ee
+
+def GHzToeV(nu):
+	global hbar
+	return JToeV(2*pi*hbar*nu*1e9)
+
+def eVToGHz(u):
+	global hbar
+	return eVToJ(u)/(2*pi*hbar*1e9)
 
 
