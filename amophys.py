@@ -160,9 +160,8 @@ def hamiltonian(basis):
 				print(gJ,gI,Bz)
 
 	return H
-			
 	
-def alpha0(w_ab,w,I,RME=None):
+def acstark_scalar(w_ab,w,I,RME=None):
 	""" the scalar AC Stark shift, or light shift, seen by a two 
 		level atom in an oscillating electric field.
 		w_ab is the freq difference between a,b
@@ -176,6 +175,34 @@ def alpha0(w_ab,w,I,RME=None):
 
 	return -(ee**2)*w_ab*cc(RME)*RME*I/(2*hbar*(w_ab**2-w**2))
 	
+#### State Evolution
+
+def obe_derivs(y0,t,D,O,t1=np.inf,t2=np.inf):
+# def derivs(t,y0,params):
+	""" Returns RHS of optical bloch eqs for current values at time t,
+	
+		drgg = ree/t1 - 1j/2*(O*cc(reg)-cc(O)*reg) 
+		dree = -ree/t1 + 1j/2*(O*cc(reg)-cc(O)*reg)
+		dreg = (1j*D-1/(2*t1))*reg+1j*O/2*(rgg-ree) # = cc(drge)
+	
+		'y0': [rgg,ree,reg]
+		't': time
+		'D': detuning
+		'O': Rabi frequency
+		't1': state lifetime
+		't2': coherence
+	"""
+	
+	rgg,ree,reg = y0
+
+	# time derivatives of density op elements
+	curl = 1j/2*(O*cc(reg)-cc(O)*reg) 
+	drgg = ree/t1 - curl 
+	dree = -ree/t1 + curl
+	dreg = (1j*D-1/(2*t1))*reg+1j*O/2*(rgg-ree) 
+
+	return array([drgg,dree,dreg])
+
 #### Quantum Physics
 
 def jmbasis(jlist):
@@ -250,19 +277,15 @@ def radTokHz(w):
 	return w/(2*pi*1e3)
 
 def JToeV(u):
-	global ee
 	return u/ee
 
 def eVToJ(u):
-	global ee
 	return u*ee
 
 def GHzToeV(nu):
-	global hbar
 	return JToeV(2*pi*hbar*nu*1e9)
 
 def eVToGHz(u):
-	global hbar
 	return eVToJ(u)/(2*pi*hbar*1e9)
 
 

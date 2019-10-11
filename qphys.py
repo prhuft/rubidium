@@ -1,6 +1,8 @@
 """
 	Various functions for my quantum/amo simulations, etc.
 	Preston Huft, Fall 2019
+	
+	Deprecated. See amophys.py instead
 """
 # libraries
 
