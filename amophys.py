@@ -49,15 +49,6 @@ def hf_zeeman(states,gJ,gI,Bz=None,units='Joules'):
 	"""
 		
 	## TODO: build in better unit functionality
-	
-	# if Bz is not None:
-		# UB = uB*Bz# magnetic field potential energy; [J] by default
-
-	# if units == 'Joules':
-		# pass
-	# elif units == 'eV':
-	# elif units == 'UB':
-		# UB = 1
 		
 	I,J,F,mF,FF,mFF = states
 	q = 0 # assume B = Bz for now
@@ -78,6 +69,8 @@ def hf_zeeman(states,gJ,gI,Bz=None,units='Joules'):
 			return elem
 		elif units == 'eV':
 			return JToeV(elem)
+		elif units == 'GHz':
+			return eVToGHz(JToeV(elem)) 
 		else:
 			print(f"invalid unit [{units}] for non-zero Bz. Result in 'J'.")
 			return elem
@@ -137,7 +130,7 @@ def hamiltonian_z1(basis,gI,gJ,Bz=None,I=1.5,J=.5,units='Joules'):
 
 	return H_Zz
 	
-def hamiltonian(basis):
+def hamiltonian(basis,mat_elem):
 	""" 
 		returns a hamiltonian in the given basis, whose elements are to 
 		be specified by a decorator function. 
@@ -154,7 +147,7 @@ def hamiltonian(basis):
 			FF,mFF = state_j
 			states = [I,J,F,mF,FF,mFF]
 			try:
-				H_Zz[i,j] = matrix_elem(states)
+				H_Zz[i,j] = mat_elem(states)
 			except:
 				print("Failed: %s" % states)
 				print(gJ,gI,Bz)
@@ -177,7 +170,7 @@ def acstark_scalar(w_ab,w,I,RME=None):
 	
 #### State Evolution
 
-def obe_derivs(y0,t,D,O,t1=np.inf,t2=np.inf):
+def obe_derivs(y0,t,D,O,phi=0,t1=np.inf,t2=np.inf):
 # def derivs(t,y0,params):
 	""" Returns RHS of optical bloch eqs for current values at time t,
 	
@@ -199,7 +192,7 @@ def obe_derivs(y0,t,D,O,t1=np.inf,t2=np.inf):
 	curl = 1j/2*(O*cc(reg)-cc(O)*reg) 
 	drgg = ree/t1 - curl 
 	dree = -ree/t1 + curl
-	dreg = (1j*D-1/(2*t1))*reg+1j*O/2*(rgg-ree) 
+	dreg = (1j*D-1/(2*t1))*reg+1j*O/2*(rgg-ree) # actually reg tilda
 
 	return array([drgg,dree,dreg])
 
