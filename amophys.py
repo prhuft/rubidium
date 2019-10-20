@@ -221,7 +221,7 @@ def comm(A,B):
 
 #### Syntactic sugar and convenience functions
 
-def czeros(num):
+def czeros(num): # numpy can already do this with zeros(num,complex)
 	""" return array of complex zeros """
 	c = empty(num,complex)
 	for i in range(num):
@@ -256,6 +256,15 @@ def diagonal(mat):
 		return D
 		
 #### Conversions
+
+## TODO: make conversion factors a dictionary
+
+def cgsToSI(alpha):
+	return 4*pi*e0*1e-6*alpha
+
+def auToSI(alpha):
+	""" for polarizability by default """
+	return alpha/1.64877727436e-41
 
 def radToTHz(w):
 	return w/(2*pi*1e12)
