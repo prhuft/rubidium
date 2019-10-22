@@ -1,0 +1,13 @@
+See polarizability.ipynb for calculations. 
+CGS units. Multiply by 4 pi e0 10^-6 to convert to SI. 
+
+5s1/2: (j,m Basis)
+-------------------------------------------------------------------------------
+	- 770nm, q = 0: alpha0 ~= -1.3531152582154836e-21, 12 terms in sum
+	- 1064nm, q = 0: alpha0 ~= 9.992826185051465e-23, 12 terms in sum
+	 
+5s1/2: (f,m Basis)
+-------------------------------------------------------------------------------
+	-1064nm, q = 0:
+		- F = 2: 
+		- F = 1:
