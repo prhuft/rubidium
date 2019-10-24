@@ -22,4 +22,15 @@ D2_Isat = (5/7)*(hbar*gamma_D2*omega_D2**3
 D2_MatElem = 3.584e-29 # <J=1/2||er||J'=3/2> [C*m]
 D1_MatElem = 2.537e-29 # <J=1/2||er||J'=1/2> [C*m]
 
-## TODO: add rb energies in a tabular way... maybe call by state
+## TODO: could eventually replace with NIST CODATA for 87Rb I
+
+hf_levels = [ # frequencies wrt 5s1/2 COM energy
+    {'n': 5, 'L': 0, 'J': 0.5, 'F': 1, 'nu': -4.271676631815196},
+    {'n': 5, 'L': 0, 'J': 0.5, 'F': 2, 'nu': 2.563005979089114},
+    {'n': 5, 'L': 1, 'J': 0.5, 'F': 1, 'nu': 377106.953053064},
+    {'n': 5, 'L': 1, 'J': 0.5, 'F': 2, 'nu': 377107.769709364},
+    {'n': 5, 'L': 1, 'J': 1.5, 'F': 0, 'nu': 384230.1823946245},
+    {'n': 5, 'L': 1, 'J': 1.5, 'F': 1, 'nu': 384230.2546166565},
+    {'n': 5, 'L': 1, 'J': 1.5, 'F': 2, 'nu': 384230.4115571805},
+    {'n': 5, 'L': 1, 'J': 1.5, 'F': 3, 'nu': 384230.6782093585}
+]

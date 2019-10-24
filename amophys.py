@@ -2,6 +2,8 @@
 	AMO/QM functions!
 	
 	Preston Huft, 2019
+	
+	Eventually bundle stuff into classes? idk, i'm usually fine importing everything
 """
 
 #### libraries
@@ -11,8 +13,11 @@ from sympy import MatrixSymbol,MatAdd,MatMul,Identity as eye,Matrix,zeros
 from sympy.utilities.iterables import flatten
 import numpy as np
 from numpy import *
-from numpy import transpose,inf
 from numpy.linalg import eig
+from numpy.random import normal
+from scipy.optimize import curve_fit
+from random import random as rand
+
 
 #### local files
 from physconsts import *
@@ -154,21 +159,21 @@ def hamiltonian(basis,mat_elem):
 
 	return H
 	
-def acstark_scalar(w_ab,w,I,RME=None):
-	""" the scalar AC Stark shift, or light shift, seen by a two 
-		level atom in an oscillating electric field.
-		w_ab is the freq difference between a,b
-		w is the applied light frequency
-		I is the intensity of the light 
-		RME is the reduced matrix element <J||er||J'>.
+def acstark_twolevel(O,D):
+	""" The two level atom AC Stark shift from diagnolization of the full Hamiltonian,
+		assuming the detuning D << E2-E1, and making the RWA. 
+		
+		Uac = -O**2/(4*D)
 	"""
+	
+	return -O**2/(4*D)
 
 	if RME is None:
 		RME = 1 # the light shift is now in units of the RME
 
 	return -(ee**2)*w_ab*cc(RME)*RME*I/(2*hbar*(w_ab**2-w**2))
 	
-#### State Evolution
+#### Atomic State Evolution
 
 def obe_derivs(y0,t,D,O,phi=0,t1=np.inf,t2=np.inf):
 # def derivs(t,y0,params):
@@ -196,6 +201,224 @@ def obe_derivs(y0,t,D,O,phi=0,t1=np.inf,t2=np.inf):
 
 	return array([drgg,dree,dreg])
 
+class dipole_trap:
+	
+	def __init__(self,lmbda,wx,Tdepth,Tatom,wy=None):
+		""" A dipole trap object with the beams potential and distribution of 
+			atoms specified by Tatom. 
+			'wx': x beam waist in focal plane (z=0)
+			'wy': Assumed equal to wx by default
+			'Tdepth'
+			'Tatom'
+		"""
+		self.wx = wx
+		self.Tdepth = Tdepth
+		self.T = Tatom
+		if wy is None:
+			self.wy = wx
+		
+		# FORT and atom parameter stuff
+		self.umax = kB*self.Tdepth # the maximum FORT depth
+		self.lmbda = lmbda # the trap wavelength [m]
+
+		self.zR = pi*wx**2/self.lmbda
+		self.omega_r = (1/sqrt((self.wx**2+self.wy**2)/2))*sqrt(2*kB*self.Tdepth/mRb) # radial trap frequency 
+		self.omega_z = (1/self.zR)*sqrt(2*kB*self.Tdepth/mRb) # axial trap frequency
+		print(f"omega_r = {self.omega_r*1e-3:.3f} kHz, omega_z = {self.omega_z*1e-3:.3f} kHz")
+
+	def U(self,x,y,z):
+		""" the potential energy as a function of space in the dipole trap.
+			ASTIGMATISM not correctly represented!!
+		"""
+		zR = self.zR
+		wx = self.wx
+		wy = self.wy
+		ww = (1+z**2/zR**2) 
+		umax = self.umax
+		return -umax*exp(-2*x**2/(wx**2*ww)-2*y**2/(wy**2*ww))/ww 
+	
+	def xdist(self,events,plane=None):
+		""" velocity component distributions """
+		# Grainger group method
+		omega_r = self.omega_r
+		omega_z = self.omega_z
+		T = self.T
+		dx = dy = sqrt(kB*T/(mRb*omega_r**2))
+		dz = sqrt(kB*T/(mRb*omega_z**2))
+		zlist = normal(0,dz,size=events)
+		xlist = normal(0,dx,size=events)
+		ylist = normal(0,dy,size=events)
+		
+		if plane is 'xz':
+			return xlist,zlist
+		else:
+			return xlist,ylist,zlist
+	
+	def vdist(self,events):
+		""" maxwell boltzmann speeds """
+		umax = self.umax
+		atoms = ensemble(self.T)
+		
+		vlist = atoms.sampling_maxboltzv(events,[0,2]) # speeds
+
+		vxlist = empty(events)
+		vylist = empty(events)
+		vzlist = empty(events)
+		
+		for i in range(events):
+			ex = 2*rand()-1
+			ey = 2*rand()-1
+			ez = 2*rand()-1
+			v = vlist[i]
+			A = sqrt(ex**2+ey**2+ez**2)
+			vxlist[i] = ex*v/A
+			vylist[i] = ey*v/A
+			vzlist[i] = ez*v/A
+			
+#         vlist = array([sqrt(vx**2+vy**2+vx**2) for vx,vy,vz in zip(vxlist,vylist,vzlist)])
+#         plt.hist(vlist, 50, density=True) # show maxwell boltzmann speed dist
+#         plt.xlabel('v')
+#         plt.ylabel('occurences')
+#         plt.show()
+
+		return vxlist,vylist,vzlist
+	
+	def distplot(self,events):
+		""" show atoms in FORT in z = 0 plane before drop and recapture """
+		mu = 1e-6
+		wx = self.wx
+		zR = self.zR
+		print(f"zr={zR/mu:.0f} [um], wx={wx/mu:.0f} [um]")
+		
+		xlist,ylist = self.xdist(events,plane='xz') # positions in [m]
+		
+		s = 1.5 # units waist or rayleigh length
+		xpts = linspace(-s*wx,s*wx,100)
+		zpts = linspace(-s*zR,s*zR,100)
+		xx,zz = meshgrid(xpts,zpts)
+		fpts = -self.U(xx,0,zz) # the fort intensity eval'd on the meshgrid
+		plt.contourf(xpts/mu,zpts/mu,fpts)
+		plt.scatter(xlist/mu,ylist/mu,color='red')
+		plt.xlabel("x")
+		plt.ylabel("z")
+#         plt.axes().set_aspect('equal')
+		plt.show() 
+
+	def drop_recap(self,tlist,T=None,events=None,base_retention=None,
+			progress=False):
+		""" Procedure for simulating a release ("drop") and recapture experiment
+			to deduce the temperature of actual atoms in such an experiment. 
+		
+			Based on code by Mark, with some corrections
+			'wx': waist
+			'Tdepth': FORT temperature depth
+			'T': atom temp
+			'tmax': max time in units us
+			'steps': number of FORT drop outs
+			'events': number of release-recapture events per data pt
+			'wy': optional waist for eliptical FORT 
+		"""
+	  
+		Tdepth = self.Tdepth
+		wx = self.wx
+		umax = self.umax
+		zR = self.zR
+		tlist = 1e-6*tlist
+
+		if T is None:
+			T = self.T
+		if events is None:
+			events = 2000
+		if base_retention is None:
+			base_retention = 1 # the retention baseline with no fort drop
+
+		retention = empty(len(tlist))
+   
+		xlist,ylist,zlist = self.xdist(events)
+		vzlist,vxlist,vylist = self.vdist(events)
+
+		for j,t in enumerate(tlist):
+
+			escape = 0 
+			nhot = 0 # this is an untrapped atom
+
+			for i in range(events):     
+				hot = 0
+				KE = .5*mRb*((vxlist[i]-g*t)**2+vylist[i]**2
+							  +vzlist[i]**2)
+				PE0 = self.U(xlist[i],ylist[i],zlist[i])
+				PE = self.U(xlist[i]+t*vxlist[i]+.5*g*(t)**2,
+					   ylist[i]+t*vylist[i],
+					   zlist[i]+t*vzlist[i])
+
+				if KE + PE0 > 0:
+					hot = 1
+				nhot += hot
+				if KE + PE > 0:
+					escape += 1-hot
+			retention[j] = base_retention*(1 - escape/events)
+			
+			if progress is not False:
+				if j % 10 == 0:
+					print(f"timestep {j}: t = {t*1e6:.0f} [us], ret = {retention[j]:.2f}")     
+		
+		print(f"finished. T={T*1e6} [uK], r = {base_retention}")
+		return tlist*1e6,retention
+	
+	def curvefit(self,tdata,rdata):
+		""" For using the release_recap procedure to fit real data.
+			
+			tdata: time pts from data
+			rdata: retention pts data
+		"""
+		def f(tlist,T,r):
+			"""
+				tlist: times [s]
+				T: atom temp [K]
+				r: baseline retention in (0,1]
+			"""
+			
+			t,y = self.drop_recap(tlist,T=T,base_retention=r)
+			return y
+		
+		p0=[self.T,1] # scale up the temp 
+		popt,pcov = curve_fit(f,tdata,rdata,p0,
+							  absolute_sigma=True)
+		
+		Topt,ropt = popt # the optimum parameters
+		
+		print(f"T_fit = {Topt*1e6:.0f}")
+		tlist,ret=self.drop_recap(tdata,T=Topt,base_retention=ropt)
+		
+		plt.plot(tlist,ret,label=f"T_fit = {Topt*1e6:.0f}")
+		plt.scatter(tdata,rdata,label='real live data',color='r')
+		plt.show()
+		
+		return tlist,ret
+
+#### Optics
+
+class gaussian_beam:
+	
+	## TODO: figure out how to have methods not tied to object ref, 
+	## which can be called individually, and also ref each other
+	
+	@classmethod
+	def intensity(x,y,z,lmbda,wx,I0,wy=None):
+	
+		if wy is None:
+			wy = wx
+		print(wx,wy,lmbda)
+		zR = z_rayleigh(lmbda,wx)
+		
+		ww = (1+z**2/zR**2) # waist w(z)
+		return I0*exp(-2*x**2/(wx**2*ww)-2*y**2/(wy**2*ww))/ww
+	
+	
+	
+def z_rayleigh(lmbda,wx):
+		return pi*wx**2/lmbda
+		
 #### Quantum Physics
 
 def jmbasis(jlist):
@@ -241,7 +464,7 @@ def diagonal(mat):
 		'mat' assumed to be sympy matrix. 
 	"""
 	# TODO: extend to support numpy square ndarray diagnolization as well
-	assert shape(mat)[0]==shape(mat)[1]
+	assert shape(mat)[0]==shape(mat)[1], "the matrix is not square"
 	dim = shape(mat)[0]
 	P,D = mat.diagonalize()
 	D_copy = copy(D) # guarantees the return type the same as input type
