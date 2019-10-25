@@ -173,6 +173,13 @@ def acstark_twolevel(O,D):
 
 	return -(ee**2)*w_ab*cc(RME)*RME*I/(2*hbar*(w_ab**2-w**2))
 	
+def rabi(I0,matelem):
+    """ the rabi frequency for a beam of intensity I0 coupling states |e>,|g>
+        such that matelem = <e|x|g>. May need to include a coupling const. 
+        as prefactor on matelem. 
+    """
+    return ee*sqrt(2*I0/(c*e0))*matelem/hbar
+	
 #### Atomic State Evolution
 
 def obe_derivs(y0,t,D,O,phi=0,t1=np.inf,t2=np.inf):
@@ -216,6 +223,8 @@ class dipole_trap:
 		self.T = Tatom
 		if wy is None:
 			self.wy = wx
+		else:
+			self.wy = wy
 		
 		# FORT and atom parameter stuff
 		self.umax = kB*self.Tdepth # the maximum FORT depth
@@ -224,7 +233,7 @@ class dipole_trap:
 		self.zR = pi*wx**2/self.lmbda
 		self.omega_r = (1/sqrt((self.wx**2+self.wy**2)/2))*sqrt(2*kB*self.Tdepth/mRb) # radial trap frequency 
 		self.omega_z = (1/self.zR)*sqrt(2*kB*self.Tdepth/mRb) # axial trap frequency
-		print(f"omega_r = {self.omega_r*1e-3:.3f} kHz, omega_z = {self.omega_z*1e-3:.3f} kHz")
+		# print(f"omega_r = {self.omega_r*1e-3:.3f} kHz, omega_z = {self.omega_z*1e-3:.3f} kHz")
 
 	def U(self,x,y,z):
 		""" the potential energy as a function of space in the dipole trap.
@@ -237,7 +246,7 @@ class dipole_trap:
 		umax = self.umax
 		return -umax*exp(-2*x**2/(wx**2*ww)-2*y**2/(wy**2*ww))/ww 
 	
-	def xdist(self,events,plane=None):
+	def xdist(self,events=None,plane=None):
 		""" velocity component distributions """
 		# Grainger group method
 		omega_r = self.omega_r
@@ -252,6 +261,8 @@ class dipole_trap:
 		if plane is 'xz':
 			return xlist,zlist
 		else:
+			if events is None:
+				return xlist[0],ylist[0],zlist[0]
 			return xlist,ylist,zlist
 	
 	def vdist(self,events):
@@ -404,20 +415,20 @@ class gaussian_beam:
 	## which can be called individually, and also ref each other
 	
 	@classmethod
-	def intensity(x,y,z,lmbda,wx,I0,wy=None):
-	
+	def intensity(x,y,z,lmbda,wx,I0,wy=None,z_offset=0):
 		if wy is None:
 			wy = wx
-		print(wx,wy,lmbda)
-		zR = z_rayleigh(lmbda,wx)
-		
-		ww = (1+z**2/zR**2) # waist w(z)
-		return I0*exp(-2*x**2/(wx**2*ww)-2*y**2/(wy**2*ww))/ww
+			
+		zRx = z_rayleigh(lmbda,wx)
+		zRy = z_rayleigh(lmbda,wy)
+
+		wzx = (1+(z/zRx)**2)
+		wzy = (1+(z/zRy)**2)
+		return I0*exp(-2*x**2/(wzx*(wx**2*wzx))-2*y**2/(wzy*(wy**2*wzy)))	
 	
 	
-	
-def z_rayleigh(lmbda,wx):
-		return pi*wx**2/lmbda
+def z_rayleigh(lmbda,w0):
+		return pi*w0**2/lmbda
 		
 #### Quantum Physics
 
