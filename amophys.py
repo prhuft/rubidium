@@ -175,10 +175,10 @@ def acstark_twolevel(O,D):
 	
 def rabi(I0,matelem):
     """ the rabi frequency for a beam of intensity I0 coupling states |e>,|g>
-        such that matelem = <e|x|g>. May need to include a coupling const. 
+        such that matelem = <e|q x|g>. May need to include a coupling const. 
         as prefactor on matelem. 
     """
-    return ee*sqrt(2*I0/(c*e0))*matelem/hbar
+    return sqrt(2*I0/(c*e0))*matelem/hbar
 	
 #### Atomic State Evolution
 
