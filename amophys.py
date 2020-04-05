@@ -210,7 +210,7 @@ def obe_derivs(y0,t,D,O,phi=0,t1=np.inf,t2=np.inf):
 
 class dipole_trap:
 	
-	def __init__(self,lmbda,wx,Tdepth,Tatom,wy=None):
+	def __init__(self,lmbda,wx,Tdepth=None,Tatom=None,wy=None, xy_dz=None):
 		""" A dipole trap object with the beams potential and distribution of 
 			atoms specified by Tatom. 
 			'wx': x beam waist in focal plane (z=0)
@@ -221,16 +221,24 @@ class dipole_trap:
 		self.wx = wx
 		self.Tdepth = Tdepth
 		self.T = Tatom
-		if wy is None:
-			self.wy = wx
-		else:
-			self.wy = wy
 		
 		# FORT and atom parameter stuff
 		self.umax = kB*self.Tdepth # the maximum FORT depth
 		self.lmbda = lmbda # the trap wavelength [m]
+		
+		if wy != None:
+			self.wy = wx
+		else:
+			self.wy = wy
 
-		self.zR = pi*wx**2/self.lmbda
+		if xy_dz != None:
+			self.xy_dz = xy_dz
+		else:
+			self.xy_dz = 0
+
+		self.zRx = pi*self.wx**2/self.lmbda
+        self.zRy = pi*self.wy**2/self.lmbda
+        
 		self.omega_r = (1/sqrt((self.wx**2+self.wy**2)/2))*sqrt(2*kB*self.Tdepth/mRb) # radial trap frequency 
 		self.omega_z = (1/self.zR)*sqrt(2*kB*self.Tdepth/mRb) # axial trap frequency
 		# print(f"omega_r = {self.omega_r*1e-3:.3f} kHz, omega_z = {self.omega_z*1e-3:.3f} kHz")
@@ -242,9 +250,12 @@ class dipole_trap:
 		zR = self.zR
 		wx = self.wx
 		wy = self.wy
-		ww = (1+z**2/zR**2) 
+		
+		wwx = wx**2*(1+z**2/self.zRx**2)
+		wwy = wy**2*(1+(z - self.xy_astig)**2/self.zRy**2)
+		
 		umax = self.umax
-		return -umax*exp(-2*x**2/(wx**2*ww)-2*y**2/(wy**2*ww))/ww 
+		return -umax*exp(-2*x**2/(wx**2*wwx)-2*y**2/(wy**2*wwy))/sqrt(wwx*wwy) 
 	
 	def xdist(self,events=None,plane=None):
 		""" velocity component distributions """
@@ -523,5 +534,3 @@ def GHzToeV(nu):
 
 def eVToGHz(u):
 	return eVToJ(u)/(2*pi*hbar*1e9)
-
-
