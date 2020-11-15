@@ -450,7 +450,7 @@ class gaussian_beam:
     ## TODO: figure out how to have methods not tied to object ref, 
     ## which can be called individually, and also ref each other
     
-    @classmethod
+    
     def intensity(x,y,z,lmbda,wx,I0,wy=None,z_offset=0):
         if wy is None:
             wy = wx
@@ -526,50 +526,45 @@ def diagonal(mat):
         return D
         
 #### Conversions
+    
+def cgsToSI(alpha):
+    return 4*pi*e0*1e-6*alpha
 
-## TODO: make conversion factors a dictionary
 
-class Conversions:
+def auToSI(alpha):
+    """ for polarizability by default """
+    return alpha/1.64877727436e-41
 
-    @classmethod
-    def cgsToSI(alpha):
-        return 4*pi*e0*1e-6*alpha
 
-    @classmethod
-    def auToSI(alpha):
-        """ for polarizability by default """
-        return alpha/1.64877727436e-41
+def radToTHz(w):
+    return w/(2*pi*1e12)
 
-    @classmethod
-    def radToTHz(w):
-        return w/(2*pi*1e12)
 
-    @classmethod
-    def radToGHz(w):
-        return w/(2*pi*1e9)
+def radToGHz(w):
+    return w/(2*pi*1e9)
 
-    @classmethod
-    def radToMhz(w):
-        return w/(2*pi*1e6) 
 
-    @classmethod
-    def radTokHz(w):
-        return w/(2*pi*1e3)
+def radToMhz(w):
+    return w/(2*pi*1e6) 
 
-    @classmethod
-    def JToeV(u):
-        return u/ee
 
-    @classmethod
-    def eVToJ(u):
-        return u*ee
+def radTokHz(w):
+    return w/(2*pi*1e3)
 
-    @classmethod
-    def GHzToeV(nu):
-        return JToeV(2*pi*hbar*nu*1e9)
 
-    @classmethod
-    def eVToGHz(u):
-        return eVToJ(u)/(2*pi*hbar*1e9)
+def JToeV(u):
+    return u/ee
+
+
+def eVToJ(u):
+    return u*ee
+
+
+def GHzToeV(nu):
+    return JToeV(2*pi*hbar*nu*1e9)
+
+
+def eVToGHz(u):
+    return eVToJ(u)/(2*pi*hbar*1e9)
 
 
