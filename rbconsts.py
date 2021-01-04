@@ -4,6 +4,7 @@ from physconsts import *
 ## Rb87 constants
 mRb = 1.4192261e-25 # [kg]
 I = 3/2 # nuclear spin
+s = 0.5 # electron spin
 nu_hf = 6.83468261090429 # [GHz]
 gamma_D2 =2*pi*6.0659e6 ; # [rad/s]
 lambda_D2 = 7.8024120968613e-7 # [m]
@@ -23,6 +24,8 @@ D2_MatElem = 3.584e-29 # <J=1/2||er||J'=3/2> [C*m]
 D1_MatElem = 2.537e-29 # <J=1/2||er||J'=1/2> [C*m]
 
 # the keys are nested in order n, L, J, F, nu
+# excited state frequencies are given as the transition frequency
+# to the ground state c.o.m. plus the hyperfine shift for the excited level.
 hf_states = {5:
                     {0: 
                         {0.5:
@@ -41,3 +44,5 @@ hf_states = {5:
                         }
                     }
                 }
+                
+                
