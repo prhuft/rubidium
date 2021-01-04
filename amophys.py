@@ -53,7 +53,7 @@ def hf_zeeman(states,gJ,gI,Bz=None,units='Joules'):
         units.
     """
         
-    ## TODO: build in better unit functionality
+    ## TODO: build in better unit functionality or remove option to choose units
         
     I,J,F,mF,FF,mFF = states
     q = 0 # assume B = Bz for now
@@ -87,9 +87,11 @@ def hf_zeeman(states,gJ,gI,Bz=None,units='Joules'):
             elem*= UB
             return elem
             
-def hf_coupling(F,mF,J,q,FF,mFF,JJ,I,RME=None):
+def hf_coupling(F,mF,J,q,FF,mFF,JJ,I):
     """ 
-    Returns the matrix element <F,mF,J|T_q|F',mF',J'>. 
+    Returns the constant relating matrix element <J,mJ|T_q|J',mJ'> to the 
+    reduced fine structure matrix element. 
+    
     Args:
         'RME': the reduced matrix element <alpha;J||r||alpha'J'> with alpha 
         including quantum numbers not relevant to the coupling, e.g. n. 
@@ -104,20 +106,37 @@ def hf_coupling(F,mF,J,q,FF,mFF,JJ,I,RME=None):
                    *clebsch_gordan(1,F,FF,q,mF,mFF)
     """
 
-    rme = 1
-    if RME!=None:
-        rme = RME
-
     ## From Mark's notes, eqs. A-50,51
-    mat_elem = rme*pow(-1,F+JJ+1+I)*sqrt((2*F+1)*(2*JJ+1)) \
+    mat_elem = pow(-1,F+JJ+1+I)*sqrt((2*F+1)*(2*JJ+1)) \
                 *wigner_6j(J,I,F,FF,1,JJ) \
                 *clebsch_gordan(1,F,FF,q,mF,mFF)
 
     return mat_elem
+    
+def hf_reduced_f(F,J,FF,JJ,I):
+    """
+    Returns the coupling constant relating the reduced matrix element 
+    in the hyperfine structure basis to that in the fine structure basis
+    """
 
-def f_coupling(L,J,mJ,q,LL,JJ,mJJ,I,RME=None):
+    ## Mark's notes, eq. A-51 
+    return (-1)**(1+I+JJ+F)*sqrt((2*F+1)*(2*FF+1))*wigner_6j(J,I,F,F,1,J)
+    
+def f_reduced_ls(J,L,JJ,LL):
+    """
+    Returns the coupling constant relating the reduced matrix element 
+    in the fine structure basis to that in the L,S basis
+    """
+
+    ## Mark's notes, eq. A-51
+    S = 1/2
+    return (-1)**(1+S+LL+J)*sqrt((2*J+1)*(2*JJ+1))*wigner_6j(L,I,J,JJ,1,LL)
+
+def f_coupling(L,J,mJ,q,LL,JJ,mJJ,I):
     """ 
-    Returns the matrix element <J,mJ|T_q|J',mJ'>. 
+    Returns the constant relating matrix element <J,mJ|T_q|J',mJ'> to the 
+    reduced fine structure matrix element. 
+    
     Args:
         'RME': the reduced matrix element <alpha;J||r||alpha'J'> with alpha 
         including quantum numbers not relevant to the coupling, e.g. n. 
@@ -132,12 +151,8 @@ def f_coupling(L,J,mJ,q,LL,JJ,mJJ,I,RME=None):
                    *clebsch_gordan(1,F,FF,q,mF,mFF)
     """
 
-    rme = 1
-    if RME!=None:
-        rme = RME
-
     ## From Mark's notes, eqs. A-50,51
-    mat_elem = rme*clebsch_gordan(1,J,JJ,q,mJ,mJJ)
+    mat_elem = clebsch_gordan(1,J,JJ,q,mJ,mJJ)
 
     return mat_elem
     
@@ -481,6 +496,13 @@ def jmbasis(jlist):
             basis[i] = [j,m]
             i+=1 
     return np.flip(basis)
+
+def j3_from_j1j2(j1,j2):
+    """
+    returns list of possible angular momentum values j3 from combining j1,j2
+    """
+    
+    return [abs(j1-j2)+i for i in range(int(2*min(j1,j2))+1)]
 
 def comm(A,B):
     """ Returns the commutator of A,B: [A,B]=A.B-B.A. Assumes 'A','B' are sympy 
