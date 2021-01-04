@@ -120,7 +120,7 @@ def hf_reduced_f(F,J,FF,JJ,I):
     """
 
     ## Mark's notes, eq. A-51 
-    return (-1)**(1+I+JJ+F)*sqrt((2*F+1)*(2*FF+1))*wigner_6j(J,I,F,F,1,J)
+    return (-1)**(1+I+JJ+F)*sqrt((2*F+1)*(2*FF+1))*wigner_6j(J,I,F,FF,1,JJ)
     
 def f_reduced_ls(J,L,JJ,LL):
     """
