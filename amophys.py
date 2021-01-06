@@ -93,13 +93,9 @@ def hf_coupling(F,mF,J,q,FF,mFF,JJ,I):
     reduced fine structure matrix element. 
     
     Args:
-        'RME': the reduced matrix element <alpha;J||r||alpha'J'> with alpha 
-        including quantum numbers not relevant to the coupling, e.g. n. 
-        If RME=None, the matrix element is in units of [RME].
-        
         I is the nuclear spin of the atom.
     Returns:
-        'mat_elem': 
+        'coupling': 
         ## From Mark's notes, eqs. A-50,51. Also see Steck Rb datasheet.
         mat_elem = rme*pow(-1,F+JJ+1+I)*sqrt((2*F+1)*(2*JJ+1)) \
                    *wigner_6j(J,I,F,FF,1,JJ) \
@@ -107,11 +103,11 @@ def hf_coupling(F,mF,J,q,FF,mFF,JJ,I):
     """
 
     ## From Mark's notes, eqs. A-50,51
-    mat_elem = pow(-1,F+JJ+1+I)*sqrt((2*F+1)*(2*JJ+1)) \
+    coupling = pow(-1,F+JJ+1+I)*sqrt((2*F+1)*(2*JJ+1)) \
                 *wigner_6j(J,I,F,FF,1,JJ) \
                 *clebsch_gordan(1,F,FF,q,mF,mFF)
 
-    return mat_elem
+    return coupling
     
 def hf_reduced_f(F,J,FF,JJ,I):
     """
