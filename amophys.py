@@ -152,6 +152,17 @@ def f_coupling(L,J,mJ,q,LL,JJ,mJJ,I):
 
     return mat_elem
     
+def coupling_f_to_j(jr,mjr,jp,fg,mg,q1,q2,deltap,I=I):
+    """
+    Coupling constant between state (jr,mjr) and (fg,mg) via a ladder transition
+    through (jp, mjp) with two photons with projections q1,q2. Minho's thesis
+    section 2.4.
+    """
+    coupling = 0
+    
+    little_c lambda I,j,f,jj,ff = (-1)**(1+I+f+jj)*sqrt(2*f+1)*wigner_6j(j,1,f,ff,1,jj)
+    pass
+    
 def alpha0_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=False):
     """
     Returns the scalar polarizability for a hyperfine level |n,j,l,f>
@@ -213,7 +224,7 @@ def alpha0_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
                         if printterms:
                             print(f"alpha0 ~= {alpha0/(4*pi*e0*1e-30)} [Ang.^3], {terms} terms in sum")
                     
-    return alpha0
+    return float(alpha0)
     
 def alpha1_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=False):
     """
@@ -394,7 +405,7 @@ def hamiltonian(basis,mat_elem):
             FF,mFF = state_j
             states = [I,J,F,mF,FF,mFF]
             try:
-                H_Zz[i,j] = mat_elem(states)
+                H[i,j] = mat_elem(states)
             except:
                 print("Failed: %s" % states)
                 print(gJ,gI,Bz)
