@@ -520,7 +520,7 @@ class dipole_trap:
         xlist = normal(0,dx,size=events)
         ylist = normal(0,dy,size=events)
         
-        if plane is 'xz':
+        if plane == 'xz':
             return xlist,zlist
         else:
             if events is None:
