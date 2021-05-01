@@ -94,40 +94,4 @@ def is_scalar_2D(xarr):
             except Exception as e:
                 pass
     return True
-
-def sample_dist(fx,fmax,domain,n,showplot=False):
-    """
-    Get random samples from a probability distribution function (PDF)
-    
-    Args:
-        fx: callable, the 1D continuous PDF to be sampled, i.e. f(x)
-        fmax: the maximum of f(x) on a domain [x1,x2]
-        n: number of samples to take
-        domain: list, domain over which to sample f(x), i.e. [x1,x2]
-        showplot: bool, an optional graphical check of this function
-    Return:
-        x_dist: np array (float), the samples we took, shape (n,).
-    """
-    x1,x2 = domain
-    y_dist = np.empty(n) 
-    f_dist = np.empty(n) 
-    x_dist = np.empty(n) # this is the distribution we want
-    j = 0 # dist index
-    while j < n:
-        x= (x2-x1)*rand()+x1 # rand val on domain of f(x)
-        f = fx(x)
-        y = rand()*fmax # rand val on range of f(x)
-        if y <= f:
-            y_dist[j]=y
-            f_dist[j]=f
-            x_dist[j]=x
-            j+=1
-
-    # plot distribution as a check:
-    if showplot is not False:
-        plt.scatter(x_dist,y_dist,c='red',s=10)
-        plt.scatter(x_dist,f_dist,c='blue',s=10)
-        plt.show()
-
-    return x_dist
     

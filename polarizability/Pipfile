@@ -5,10 +5,6 @@ name = "pypi"
 
 [packages]
 jupyter = "*"
-numpy = "*"
-arc-alkali-rydberg-calculator = "*"
-matplotlib = "*"
-sympy = "*"
 
 [dev-packages]
 

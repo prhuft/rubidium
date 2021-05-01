@@ -17,25 +17,19 @@ from numpy.linalg import eig
 from numpy.random import normal
 from scipy.optimize import curve_fit
 from random import random as rand
-import matplotlib.pyplot as plt
 
 
 #### local files
 from physconsts import *
 from rbconsts import *
-from rbensemble import RbEnsemble as ensemble
-
 
 #### Electric and Magnetic Dipole Interactions 
 
 def gF_fn(F,J,I,gJ,gI):
     """ Returns the F lande g factor """
 
-    if F != 0:
-        return (gJ*(F*(F+1)+J*(J+1)-I*(I+1))
-                +gI*(F*(F+1)-J*(J+1)+I*(I+1)))/(2*F*(F+1))
-    else:
-        return np.nan
+    return (gJ*(F*(F+1)+J*(J+1)-I*(I+1))
+            +gI*(F*(F+1)-J*(J+1)+I*(I+1)))/(2*F*(F+1))
 
 def gJ_fn(J,L,S,gL,gS):
     """ Returns the J lande g factor """
@@ -65,13 +59,13 @@ def hf_zeeman(states,gJ,gI,Bz=None,units='Joules'):
     q = 0 # assume B = Bz for now
 
     elem = 0
-    if mF == mFF: # q=0 => selection rule mF = mF'
+    if mF == mFF:
         elem += N(clebsch_gordan(F,1,FF,mF,q,mFF) \
                 *sqrt(2*F+1)*(-1)**(1+J+I) \
                 *(gJ*(-1)**F*sqrt(J*(J+1)*(2*J+1)) \
                 *wigner_6j(J,I,F,FF,1,J) \
                 +gI*(-1)**FF*sqrt(I*(I+1)*(2*I+1)) \
-                *wigner_6j(I,J,F,FF,1,I)))
+                *wigner_6j(I,J,F,FF,1,I))) 
         # N() is used to ensure diagnolization doesn't get tripped up
 
     if Bz is not None:
@@ -199,7 +193,7 @@ def alpha0_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
         for l_b in range(n_b): # runs through n_b - 1, inclusive
             for j_b in j3_from_j1j2(s, l_b): 
 
-                # triangle rule and dipole-allowed conditions
+                # triangle rule and -allowed conditions
                 if abs(j_b - j_a) <= 1 and abs(l_b - l_a) == 1:
 
                     try: 
@@ -210,28 +204,26 @@ def alpha0_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
 
                     except KeyError: # ignore the hf shift
                         freq_from_dict = False
-                        # had abs(), removed
-                        omega_ba = 2*pi*(eVToGHz(atom.getEnergy(n_b, l_b, j_b) 
-                                     - atom.getEnergy(n_a, l_a, j_a))*1e9)
+                        omega_ba = 2*pi*((eVToGHz(atom.getEnergy(n_b, l_b, j_b) 
+                                     - atom.getEnergy(n_a, l_a, j_a))*1e9))
 
                     matelemJ = atom.getReducedMatrixElementJ(n_a, l_a, j_a, n_b, l_b, j_b)*ee*a0
     #                 print(f"< n={n_a}, l={l_a}, j={j_a} | x | n'={n_b}, l'={l_b}, j'={j_b} >")
 
                     for f_b in j3_from_j1j2(I, j_b):
 
-                        # had abs(), removed
                         if freq_from_dict:
                             omega_ba = 2*pi*(hf_states[n_b][l_b][j_b][f_b] - hf_states[n_a][l_a][j_a][f_a])*1e9
 
                         matelemF = hf_reduced_f(f_a,j_a,f_b,j_b,I)*matelemJ
-
-                        summand = (2/(3*hbar*(2*f_a+1)))*omega_ba*abs(matelemF)**2/(omega_ba**2 - omega**2) 
-                        alpha0 += summand*sqrt(2*f_b+1)
+                        #*2*(f_a+1)
+                        summand = (2/(3*hbar*2*(f_a+1)))*omega_ba*abs(matelemF)**2/(omega_ba**2 - omega**2) 
+                        alpha0 += summand
 
                         terms += 1
                         if printterms:
                             print(f"alpha0 ~= {alpha0/(4*pi*e0*1e-30)} [Ang.^3], {terms} terms in sum")
-                            
+                    
     return float(alpha0)
     
 def alpha1_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=False):
@@ -277,7 +269,7 @@ def alpha1_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
 
                     except KeyError: # ignore the hf shift energy
                         freq_from_dict = False
-                        omega_ba = 2*pi*abs((eVToGHz(atom.getEnergy(n_b, l_b, j_b) 
+                        omega_ba = 2*pi*((eVToGHz(atom.getEnergy(n_b, l_b, j_b) 
                                      - atom.getEnergy(n_a, l_a, j_a))*1e9))
 
                     matelemJ = atom.getReducedMatrixElementJ(n_a, l_a, j_a, n_b, l_b, j_b)*ee*a0
@@ -287,7 +279,7 @@ def alpha1_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
                         
                         if abs(f_b - f_a) <=1:
                             if freq_from_dict:
-                                omega_ba = 2*pi*abs(hf_states[n_b][l_b][j_b][f_b] - hf_states[n_a][l_a][j_a][f_a])*1e9
+                                omega_ba = 2*pi*(hf_states[n_b][l_b][j_b][f_b] - hf_states[n_a][l_a][j_a][f_a])*1e9
 
                             matelemF = hf_reduced_f(f_a,j_a,f_b,j_b,I)*matelemJ
 
@@ -344,9 +336,8 @@ def alpha2_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
 
                     except KeyError: # ignore the hf shift energy
                         freq_from_dict = False
-                        # was abs(), removed
-                        omega_ba = 2*pi*abs(
-                            eVToGHz(atom.getEnergy(n_b, l_b, j_b) - atom.getEnergy(n_a, l_a, j_a)))*1e9
+                        omega_ba = 2*pi*((eVToGHz(atom.getEnergy(n_b, l_b, j_b) 
+                                     - atom.getEnergy(n_a, l_a, j_a))*1e9))
 
                     matelemJ = atom.getReducedMatrixElementJ(n_a, l_a, j_a, n_b, l_b, j_b)*ee*a0
     #                 print(f"< n={n_a}, l={l_a}, j={j_a} | x | n'={n_b}, l'={l_b}, j'={j_b} >")
@@ -354,14 +345,12 @@ def alpha2_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
                     for f_b in j3_from_j1j2(I, j_b):
 
                         if freq_from_dict:
-                            # was abs, removed
-                            omega_ba = 2*pi*abs(hf_states[n_b][l_b][j_b][f_b] - hf_states[n_a][l_a][j_a][f_a])*1e9
+                            omega_ba = 2*pi*(hf_states[n_b][l_b][j_b][f_b] - hf_states[n_a][l_a][j_a][f_a])*1e9
 
                         matelemF = hf_reduced_f(f_a,j_a,f_b,j_b,I)*matelemJ
 
 #                         (-1)^{F+F'}\sqrt{\frac{40F(2F+1)(2F-1)}{3(F+1)(2F+3)}}S_{F,F,F'}^{1,1,2}
-                        summand = ((-1)**(f_a+f_b)*sqrt(40*f_a*(2*f_a+1)*(2*f_a-1)/(3*(f_a+1)*(2*f_a+3)))*wigner_6j(1,1,2,f_a,f_a,f_b)*
-                                    (1/(hbar*(2*f_a+1)))*omega_ba*abs(matelemF)**2/(omega_ba**2 - omega**2))
+                        summand = 1/hbar*((-1)**(f_a+f_b)*sqrt(40*f_a*(2*f_a-1)/(3*(f_a+1)*(2*f_a+3)*(2*f_a+1)))*wigner_6j(f_a,1,f_b,1,f_a,2)*omega_ba*abs(matelemF)**2/(omega_ba**2 - omega**2))
                         alpha2 += summand
 
                         terms += 1
@@ -523,7 +512,7 @@ class dipole_trap:
         xlist = normal(0,dx,size=events)
         ylist = normal(0,dy,size=events)
         
-        if plane == 'xz':
+        if plane is 'xz':
             return xlist,zlist
         else:
             if events is None:
@@ -559,7 +548,7 @@ class dipole_trap:
 
         return vxlist,vylist,vzlist
     
-    def distplot(self,events, atoms=True, sx=1.5, sz=1.5, color="bone"):
+    def distplot(self,events):
         """ show atoms in FORT in z = 0 plane before drop and recapture """
         mu = 1e-6
         wx = self.wx
@@ -568,16 +557,13 @@ class dipole_trap:
         
         xlist,ylist = self.xdist(events,plane='xz') # positions in [m]
         
-        xpts = linspace(-sx*wx,sx*wx,100)
-        zpts = linspace(-sz*zR,sz*zR,100)
+        s = 1.5 # units waist or rayleigh length
+        xpts = linspace(-s*wx,s*wx,100)
+        zpts = linspace(-s*zR,s*zR,100)
         xx,zz = meshgrid(xpts,zpts)
         fpts = -self.U(xx,0,zz) # the fort intensity eval'd on the meshgrid
-        
-        cmap = plt.cm.get_cmap(color)
-        
-        plt.contourf(xpts/mu,zpts/mu,fpts, cmap=cmap)
-        if atoms is True: # otherwise, just a dipole trap plot  
-            plt.scatter(xlist/mu,ylist/mu,color='red')
+        plt.contourf(xpts/mu,zpts/mu,fpts)
+        plt.scatter(xlist/mu,ylist/mu,color='red')
         plt.xlabel("x")
         plt.ylabel("z")
 #         plt.axes().set_aspect('equal')
@@ -700,26 +686,19 @@ def z_rayleigh(lmbda,w0):
         
 #### Quantum Physics
 
-def jmbasis(jlist, flip=False):
+def jmbasis(jlist):
     """ returns a numpy array of basis vectors {|J,mJ>} given a list of 
         J vals. Output is flipped w.r.t. order of j's passed in.		
-        
-        flip: order by j descending if True. False by default.
     """
     
     # TODO: make flip optional
-    numstates = sum([2*j+1 for j in jlist])
-    assert numstates == int(numstates), "j values must be half integral or integral"
-    basis = np.empty(int(numstates),dtype=list)
+    basis = np.empty(sum([2*j+1 for j in jlist]),list)
     i = 0
     for j in jlist:
-        for m in np.arange(-j,j+1):
+        for m in range(-j,j+1):
             basis[i] = [j,m]
             i+=1 
-    if flip:
-        return np.flip(basis)
-    else:
-        return basis
+    return np.flip(basis)
 
 def j3_from_j1j2(j1,j2):
     """
@@ -808,16 +787,9 @@ def eVToJ(u):
 
 def GHzToeV(nu):
     return JToeV(2*pi*hbar*nu*1e9)
-    
+
 
 def eVToGHz(u):
     return eVToJ(u)/(2*pi*hbar*1e9)
-    
-    
-def JToGHz(u):
-    return eVToGHz(JToeV(u))
 
-
-def GHzToJ(u):
-    return eVToJ(GHzToeV(u))
 

@@ -42,7 +42,7 @@ class RbEnsemble:
 			self.x = np.empty(self.size)
 			if xdist is None:
 				self.x = np.zeros(self.size)
-			elif xdist is 'normal':
+			elif xdist == 'normal':
 				self.x = np.random.normal(0,size=self.size)
 			if statedist is not None:
 				self.amplitudes = self.psi_coeffs(self.size,statedist)
