@@ -5,7 +5,8 @@ Preston Huft
 """
 import csv
 import numpy as np
-
+from random import random as rand
+import matplotlib.pyplot as plt
 
 ## reading to and writing from files
 
