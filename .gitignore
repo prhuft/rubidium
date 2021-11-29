@@ -1,2 +1,4 @@
 *.zip
 HeatingSim_20211111.ipynb
+.ipynb_checkpoints/
+csv_analysis/.ipynb_checkpoints/
