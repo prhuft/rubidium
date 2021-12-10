@@ -9,6 +9,8 @@ numpy = "*"
 arc-alkali-rydberg-calculator = "*"
 matplotlib = "*"
 sympy = "*"
+sklearn = "*"
+scikit-learn = "*"
 
 [dev-packages]
 
