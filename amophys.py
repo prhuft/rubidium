@@ -564,7 +564,7 @@ class dipole_trap:
         mu = 1e-6
         wx = self.wx
         zR = self.zR
-        print(f"zr={zR/mu:.0f} [um], wx={wx/mu:.0f} [um]")
+        print(f"zr={zR/mu:.2f} [um], wx={wx/mu:.2f} [um]")
         
         xlist,ylist = self.xdist(events,plane='xz') # positions in [m]
         
