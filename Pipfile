@@ -11,6 +11,9 @@ matplotlib = "*"
 sympy = "*"
 sklearn = "*"
 scikit-learn = "*"
+scipy = "*"
+datetime = "*"
+bibtexparser = "*"
 
 [dev-packages]
 

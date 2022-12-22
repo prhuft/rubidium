@@ -1,5 +1,8 @@
 *.zip
+goodluck*
 HeatingSim_20211111.ipynb
 .ipynb_checkpoints/
 csv_analysis/.ipynb_checkpoints/
+csv_analysis/*.npy
 Pipfile.lock
+HeatingSim_CY_20211111.ipynb
