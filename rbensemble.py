@@ -27,18 +27,27 @@ class RbEnsemble:
 		'size'= number of atoms
 		'xdist': optional parameter specifying the initial
 			position distribution
-	"""
-	global mRb
+	"""	
 	
-	
-	def __init__(self,T,size=None,xdist=None,statedist=None):
+	def __init__(self,T,size=None,xdist=None,statedist=None,m=mRb,units=1):
+		"""
+		T
+		size
+		xdist
+		statedist
+		m=mRb is the particle mass in kg. 87Rb mass by default.
+		units=1 length units. 1 for meters, 1e-3 is mm, 1e-6 for um, and so on
+		"""
 		
+		self.m = m
+		self.temp = T
+		self.units = units
+
 		# For efficiency, pre-generate a specified number of atoms
 		if size is not None:
 			self.size = size
-			self.temp = T
 			self.v = self.sampling_maxboltzv(self.size,[0,1],self.temp) # rms
-			self.p = mRb*self.v # rms
+			self.p = self.m*self.v # rms
 			self.x = np.empty(self.size)
 			if xdist is None:
 				self.x = np.zeros(self.size)
@@ -48,7 +57,6 @@ class RbEnsemble:
 				self.amplitudes = self.psi_coeffs(self.size,statedist)
 		else:
 			self.size = 0
-			self.temp = T
 			self.v = np.array([]) # rms
 			self.p = np.array([]) # rms
 			self.x = np.array([])
@@ -58,17 +66,20 @@ class RbEnsemble:
 		""" Plots the ensemble in phase space. 1D x and p only for 
 			now.
 		"""
+		
+		m = self.m
+		
 		xmax = max(self.x) # like xmas but better
 		xmin = min(self.x) # because i said so
 		dx = xmax-xmin
 		
-		pmax = max(self.p)/mRb
-		pmin = min(self.p)/mRb
+		pmax = max(self.p)/m
+		pmin = min(self.p)/m
 		dp = pmax-pmin
 		
 		fig, ax = plt.subplots()
-		ax.scatter(self.p/mRb,self.x)#,linestyle=None)
-		ax.set(xlabel='p [m/(s mRb)]', ylabel='r [arb]',
+		ax.scatter(self.p/m,self.x)#,linestyle=None)
+		ax.set(xlabel='p [m/(s m)]', ylabel='r [arb]',
 			   xlim=(pmin-.1*dp,pmax+.1*dp),
 			   ylim=(xmin-.1*dx,xmax*+.1*dx))
 		plt.show()
@@ -87,16 +98,16 @@ class RbEnsemble:
 	def maxboltzv(self,T,v,normalization=False):
 		""" Maxwell-Boltzmann distribution of speeds for 3-dimensional
 			gas. Returns f(v) for T. """
-		global kB,mRb
-		m = mRb
+		m = self.m
 
 		A = 4*pi*(m/(2*pi*kB*T))**(3/2) # normalization consts
-		meanv = sqrt(2*kB*T/m) # the maximum occurs at the mean
+		meanv = sqrt(2*kB*T/m)/self.units
+
 
 		if normalization is True:
 			return A
 		else:
-			return A*v**2*exp(-m*v**2/(2*kB*T))
+			return A*v**2*exp(-(v/meanv)**2)
 
 	def sampling_maxboltzv(self,size=None,domain=[0,1],T=None,vectorial=False,showplot=False):
 		""" Sample random speeds with a Maxwell-Boltzmann dist. 
@@ -110,8 +121,7 @@ class RbEnsemble:
 				Set to True to return velocity vectors with a 
 				direction from a flat distribution. 
 		"""
-		global kB,mRb
-		m = mRb
+		m = self.m
 
 		if size is None:
 			size = self.size
@@ -121,10 +131,10 @@ class RbEnsemble:
 		n = size 
 		v1,v2 = domain # capped at 1 [m/s] by default
 
-		mean = sqrt(2*kB*T/m)
+		mean = sqrt(2*kB*T/m)/self.units
 		fmax = self.maxboltzv(T,mean) # the maximum
 		y_dist = np.empty(n) 
-		f_dist = np.empty(n) 
+		f_dist = np.empty(n)
 		v_dist = np.empty(n) # this is the distribution we want
 		j = 0 # dist index
 		while j < n:

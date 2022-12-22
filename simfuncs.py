@@ -96,7 +96,7 @@ def is_scalar_2D(xarr):
                 pass
     return True
 
-def sample_dist(fx,fmax,domain,n,showplot=False):
+def sample_dist(fx,fmax,domain,n,integral=False,showplot=False):
     """
     Get random samples from a probability distribution function (PDF)
     
@@ -105,6 +105,7 @@ def sample_dist(fx,fmax,domain,n,showplot=False):
         fmax: the maximum of f(x) on a domain [x1,x2]
         n: number of samples to take
         domain: list, domain over which to sample f(x), i.e. [x1,x2]
+        integral: set to True if fx is an integer distribution, i.e. only valid for x an integer (e.g. a Poisson distribution)
         showplot: bool, an optional graphical check of this function
     Return:
         x_dist: np array (float), the samples we took, shape (n,).
@@ -114,8 +115,14 @@ def sample_dist(fx,fmax,domain,n,showplot=False):
     f_dist = np.empty(n) 
     x_dist = np.empty(n) # this is the distribution we want
     j = 0 # dist index
+    
+    if not integral:
+        xsamp = lambda: (x2-x1)*rand()+x1
+    else:
+        xsamp = lambda: int((x2-x1)*rand()+x1 + 0.5)
+    
     while j < n:
-        x= (x2-x1)*rand()+x1 # rand val on domain of f(x)
+        x = xsamp() # rand val on domain of f(x)
         f = fx(x)
         y = rand()*fmax # rand val on range of f(x)
         if y <= f:
@@ -131,4 +138,6 @@ def sample_dist(fx,fmax,domain,n,showplot=False):
         plt.show()
 
     return x_dist
+
+
     

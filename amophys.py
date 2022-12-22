@@ -1,7 +1,7 @@
 """
     AMO/QM functions!
     
-    Preston Huft, 2019
+    Preston Huft, 2019 - 
     
     Eventually bundle stuff into classes? idk, i'm usually fine importing everything
 """
@@ -12,6 +12,7 @@ from sympy import symbols,N,sympify,lambdify
 from sympy import MatrixSymbol,MatAdd,MatMul,Identity as eye,Matrix,zeros
 from sympy.utilities.iterables import flatten
 import numpy as np
+# np.seterr(all='raise') # raise errors, don't just print warnings
 from numpy import *
 from numpy.linalg import eig
 from numpy.random import normal
@@ -44,19 +45,27 @@ def gJ_fn(J,L,S,gL,gS):
             +gS*(J*(J+1)-L*(L+1)+S*(S+1)))/(2*J*(J+1))
 
 def hf_zeeman(states,gJ,gI,Bz=None,units='Joules'):
-    """ Return Zeeman Hamiltonian in hyperfine basis |L J I F mF>. Assumes the 
+    """ Return Zeeman Hamiltonian matrix element in hyperfine basis |L J I F mF>. Assumes the 
         field is along the z axis, i.e. q = 0.
 
         'states': list-like, pair of quantum states given by [I,J,F,mF,FF,mFF]
-        If Bz is none initially, the sympy free_symbol is the magnetic dipole energy,
-        uB*B, not just B. 
+        'Bz': the magnetic field in T. If Bz is none initially, 
+        the sympy free_symbol is the magnetic dipole energy, uB*B, not just B. 
         
-        'units': 'Joules' (default), 'eV', 'UB' (units of the magnetic dipole 
-        energy).
+        'units': The energy units. 'Joules' (default), 'eV', 'UB' (units of the magnetic dipole 
+        energy). Note that Bz should still always be entered in T. This merely specifies an
+        optional unit conversion that will be done before returning the Hamiltonian.
         
-        From Mark's notes for the general hf Zeeman matrix elements. Units
-        are determined by UB. Could implement decorator function to change
-        units.
+        From Mark's notes for the general hf Zeeman matrix elements are given by
+        
+        UB*N(clebsch_gordan(F,1,FF,mF,q,mFF) \
+                *sqrt(2*F+1)*(-1)**(1+J+I) \
+                *(gJ*(-1)**F*sqrt(J*(J+1)*(2*J+1)) \
+                *wigner_6j(J,I,F,FF,1,J) \
+                +gI*(-1)**FF*sqrt(I*(I+1)*(2*I+1)) \
+                *wigner_6j(I,J,F,FF,1,I)))
+                
+        Units are determined by UB, which the the magnetic field times the Bohr magneton. 
     """
         
     ## TODO: build in better unit functionality or remove option to choose units
@@ -94,7 +103,7 @@ def hf_zeeman(states,gJ,gI,Bz=None,units='Joules'):
             return elem
             
 def hf_coupling(F,mF,J,q,FF,mFF,JJ,I):
-    """ 
+    """
     Returns the constant relating matrix element <J,mJ|T_q|J',mJ'> to the 
     reduced fine structure matrix element. 
     
@@ -473,9 +482,11 @@ def obe_derivs(y0,t,D,O,phi=0,t1=np.inf,t2=np.inf):
 
 #### Various classes
 
+# TODO: make optical trap an ABC class from which dipole_trap and projected_dark_trap inherit
+
 class dipole_trap:
     
-    def __init__(self,lmbda,wx,Tdepth,Tatom,wy=None):
+    def __init__(self,lmbda,wx,Tdepth,Tatom,wy=None,m=mRb,units=1):
         """ A dipole trap object with the beams potential and distribution of 
             atoms specified by Tatom. 
             'wx': x beam waist in focal plane (z=0)
@@ -486,6 +497,8 @@ class dipole_trap:
         self.wx = wx
         self.Tdepth = Tdepth
         self.T = Tatom
+        self.m = m
+        self.units = units
         if wy is None:
             self.wy = wx
         else:
@@ -496,8 +509,8 @@ class dipole_trap:
         self.lmbda = lmbda # the trap wavelength [m]
 
         self.zR = pi*wx**2/self.lmbda
-        self.omega_r = (1/sqrt((self.wx**2+self.wy**2)/2))*sqrt(2*kB*self.Tdepth/mRb) # radial trap frequency 
-        self.omega_z = (1/self.zR)*sqrt(2*kB*self.Tdepth/mRb) # axial trap frequency
+        self.omega_r = (2/sqrt((self.wx**2+self.wy**2)/2))*sqrt(kB*self.Tdepth/m) # radial trap frequency 
+        self.omega_z = (1/self.zR)*sqrt(2*kB*self.Tdepth/m) # axial trap frequency
         # print(f"omega_r = {self.omega_r*1e-3:.3f} kHz, omega_z = {self.omega_z*1e-3:.3f} kHz")
 
     def U(self,x,y,z):
@@ -511,14 +524,38 @@ class dipole_trap:
         umax = self.umax
         return -umax*exp(-2*x**2/(wx**2*ww)-2*y**2/(wy**2*ww))/ww 
     
+    def Uforce(self):
+        """
+        returns list of force components lambda x,y,z [fx,fy,fz]
+        """
+        zR = self.zR
+        wx = self.wx
+        wy = self.wy
+        w0 = sqrt((wx**2+wy**2)/2)
+        w = lambda z: w0*sqrt(1+(z/zR)**2)
+        umax = self.umax
+                
+        fx = lambda x,y,z: -umax*(4*exp(-2*(x**2+y**2)/w(z)**2)*x
+                             /(w(z)**2))
+        fy = lambda x,y,z: -umax*(4*exp(-2*(x**2+y**2)/w(z)**2)*y
+                             /(w(z)**2))
+        fz = lambda x,y,z: umax*(4*exp(-2*(x**2+y**2)/w(z)**2)*(x**2+y**2)*z
+                             /(w(z)**2*(1+(z/zR)**2)*zR**2)
+                           - 2*exp(-2*(x**2+y**2)/w(z)**2)*z
+                             /(w(z)**2*(zR/w0)**2))
+        
+        return fx,fy,fz
+        
+    
     def xdist(self,events=None,plane=None):
         """ velocity component distributions """
         # Grainger group method
         omega_r = self.omega_r
         omega_z = self.omega_z
         T = self.T
-        dx = dy = sqrt(kB*T/(mRb*omega_r**2))
-        dz = sqrt(kB*T/(mRb*omega_z**2))
+        m = self.m
+        dx = dy = sqrt(kB*T/(m*omega_r**2))
+        dz = sqrt(kB*T/(m*omega_z**2))
         zlist = normal(0,dz,size=events)
         xlist = normal(0,dx,size=events)
         ylist = normal(0,dy,size=events)
@@ -533,9 +570,9 @@ class dipole_trap:
     def vdist(self,events):
         """ maxwell boltzmann speeds """
         umax = self.umax
-        atoms = ensemble(self.T)
+        atoms = ensemble(self.T,m=self.m,units=self.units)
         
-        vlist = atoms.sampling_maxboltzv(events,[0,2]) # speeds
+        vlist = atoms.sampling_maxboltzv(events,[0,2/self.units]) # speeds
 
         vxlist = empty(events)
         vylist = empty(events)
@@ -561,7 +598,7 @@ class dipole_trap:
     
     def distplot(self,events, atoms=True, sx=1.5, sz=1.5, color="bone"):
         """ show atoms in FORT in z = 0 plane before drop and recapture """
-        mu = 1e-6
+        mu = self.units
         wx = self.wx
         zR = self.zR
         print(f"zr={zR/mu:.2f} [um], wx={wx/mu:.2f} [um]")
@@ -674,6 +711,211 @@ class dipole_trap:
         plt.show()
         
         return tlist,ret
+        
+        
+class projected_dark_trap:
+    """
+    a trap with profile U ~ |1 - E_gaussian|^2
+    """
+    
+    def __init__(self,lmbda,wx,Tdepth,Tatom,m,units=1):
+        """ A dipole trap object with the beams potential and distribution of 
+            atoms specified by Tatom. 
+            'wx': x beam waist in focal plane (z=0); wy = wx
+            'Tdepth': [K]
+            'Tatom': [K]
+            'm': atomic mass
+            units: length units. 1 for meters, 1e-3 for mm, etc. to be passed to the ensemble object
+        """
+        self.wx = wx
+        self.wy = wx
+        self.Tdepth = Tdepth
+        self.T = Tatom
+        self.m = m
+        self.units = units
+        
+        # FORT and atom parameter stuff
+        self.umax = kB*self.Tdepth # the maximum FORT depth
+        self.lmbda = lmbda # the trap wavelength [m]
+
+        self.zR = pi*wx**2/self.lmbda
+#         self.omega_r = (1/sqrt((self.wx**2+self.wy**2)/2))*sqrt(2*kB*self.Tdepth/m) # radial trap frequency 
+        self.omega_z = (1/self.zR)*sqrt(2*kB*self.Tdepth/m) # axial trap frequency
+        # print(f"omega_r = {self.omega_r*1e-3:.3f} kHz, omega_z = {self.omega_z*1e-3:.3f} kHz")
+
+    def U(self,x,y,z):
+        """ 
+        The optical potential evaluated at x,y,z
+        """
+        zR = self.zR
+        w0 = self.wx
+        w = w0*sqrt(1+(z/zR)**2) 
+        rr = x**2+y**2 # rho squared
+        umax = self.umax
+        lmbda = self.lmbda
+        
+        eta = arctan2(z,zR)
+        R = z*(1+(zR/z)**2)
+        
+        
+        # this occasionally gives a RuntimeWarning of an underflow in the exp()
+        # the reason for not simply having the if elif else is that the conditions
+        # don't evaluate properly for arrays, but the only time arrays are passed
+        # is when we're plotting U over a mesh, and we shouldn't ever get overflows
+        # when doing that.
+        try:
+            Irho = exp(-2*rr/w**2)
+        except OverflowError:
+            if log10(2*rr) - 2*log10(w) == inf:
+                arg = inf
+            elif log10(2*rr) - 2*log10(w) == -inf:
+                arg = -inf
+            else:
+                logval = log10(2*rr) - 2*log10(w)
+                arg = exp(logval)
+            Irho = exp(-arg)
+        
+        # the minus 1 at the end just adds an arbitrary offset,
+        # such that the minimum is -umax, and umax(x=y=z=inf) = 0
+        uxyz = umax*((1 - 2*(w0/w)*cos(eta-pi*rr/(R*lmbda))
+                     *exp(-rr/w**2)
+                     +(w0/w)**2*Irho) - 1) 
+                   
+        return uxyz
+    
+    def Uforce(self):
+        """
+        returns list of force components lambda x,y,z [fx,fy,fz]
+        """
+        zR = self.zR
+        lmbda = self.lmbda
+        w0 = self.wx
+        w = lambda z: w0*sqrt(1+(z/zR)**2)
+        umax = self.umax
+        
+        try:
+            fx = lambda x,y,z: -umax*(4/(w0**2*(z**2+zR**2)**2)
+                *exp(-2*(x**2+y**2)*zR**2/(w0**2*(z**2+zR**2)))
+                *x*(-zR**4+(1/lmbda)*exp((x**2+y**2)*zR**2/(w0**2*(z**2+zR**2)))
+                    *sqrt(1+(z/zR)**2)*zR**2*(
+                        zR**2*lmbda*cos(pi*(x**2+y**2)*z/(lmbda*(z**2+zR**2))-arctan2(z,zR))
+                        +pi*w0**2*z*sin(pi*(x**2+y**2)*z/(lmbda*(z**2+zR**2))-arctan2(z,zR))
+                        )
+                    )
+                )/self.units
+                    
+            fy = lambda x,y,z: -umax*(4/(w0**2*(z**2+zR**2)**2)
+                *exp(-2*(x**2+y**2)*zR**2/(w0**2*(z**2+zR**2)))
+                *y*(-zR**4+(1/lmbda)*exp((x**2+y**2)*zR**2/(w0**2*(z**2+zR**2)))
+                    *sqrt(1+(z/zR)**2)*zR**2*(
+                        zR**2*lmbda*cos(pi*(x**2+y**2)*z/(lmbda*(z**2+zR**2))-arctan2(z,zR))
+                        +pi*w0**2*z*sin(pi*(x**2+y**2)*z/(lmbda*(z**2+zR**2))-arctan2(z,zR))
+                        )
+                    )
+                )/self.units
+                
+            fz = lambda x,y,z: umax*(2/(w0**2*(z**2+zR**2)**3)
+                *exp(-2*(x**2+y**2)*zR**2/(w0**2*(z**2+zR**2)))*zR**2*(
+                -2*(x**2+y**2)*z*zR**2+w0**2*z*(z**2+zR**2)
+                +(1/lmbda)*exp((x**2+y**2)*zR**2/(w0**2*(z**2+zR**2)))
+                *sqrt(1+(z/zR)**2)*(-z*(-2*(x**2+y**2)*zR**2+w0**2
+                                             *(z**2+zR**2))*lmbda
+                                          *cos(pi*(x**2+y**2)*z/(lmbda*(z**2+zR**2))-arctan2(z,zR))
+                                          +w0**2*(pi*(x**2+y**2)*(z-zR)*(z+zR)
+                                          +zR*(z**2+zR**2)*lmbda)
+                        *sin(pi*(x**2+y**2)*z/(lmbda*(z**2+zR**2))-arctan2(z,zR))
+                    )
+                )
+            )/self.units
+            
+            
+        except RuntimeWarning as e:
+            print(f"Warning: {e}")
+            print(f"x={x}, y={y}, z={z}")
+    
+        
+        return fx,fy,fz
+        
+    
+    def xdist(self,events=None,plane=None):
+        """ 
+        position and velocity component distributions 
+        
+        the trap is harmonic along z, rho=0 but quartic along rho,z=0.
+        the quartic radial distribution is derived in Isenhower et al
+        "Atom trapping in an interferometrically generated bottle beam trap"
+        """
+        
+        omega_z = self.omega_z
+        T = self.T # atom temp
+        Tdepth = self.Tdepth
+        m = self.m
+        w0 = self.wx
+        
+        dx = dy = (2/sqrt(3))*w0*(T/Tdepth)**(1/4)
+        dz = sqrt(kB*T/(m*omega_z**2))
+        zlist = normal(0,dz,size=events)
+        xlist = normal(0,dx,size=events)
+        ylist = normal(0,dy,size=events)
+        
+        if plane == 'xz':
+            return xlist,zlist
+        else:
+            if events is None:
+                return xlist[0],ylist[0],zlist[0]
+            return xlist,ylist,zlist
+    
+    def vdist(self,events):
+        """ maxwell boltzmann speeds """
+        umax = self.umax
+        atoms = ensemble(self.T,m=self.m,units=self.units)
+        
+        vlist = atoms.sampling_maxboltzv(events,[0,2/self.units]) # speeds
+
+        vxlist = empty(events)
+        vylist = empty(events)
+        vzlist = empty(events)
+        
+        for i in range(events):
+            ex = 2*rand()-1
+            ey = 2*rand()-1
+            ez = 2*rand()-1
+            v = vlist[i]
+            A = sqrt(ex**2+ey**2+ez**2)
+            vxlist[i] = ex*v/A
+            vylist[i] = ey*v/A
+            vzlist[i] = ez*v/A
+
+        return vxlist,vylist,vzlist
+    
+    def distplot(self,events, atoms=True, sx=1.5, sz=1.5, color="bone",normalize=True):
+        """ show atoms in FORT in z = 0 plane before drop and recapture """
+        mu = 1e-6/self.units
+        wx = self.wx
+        zR = self.zR
+        print(f"zr={zR/mu:.2f} [um], wx={wx/mu:.2f} [um]")
+        
+        xlist,ylist = self.xdist(events,plane='xz') # positions in [m]
+        
+        xpts = linspace(-sx*wx,sx*wx,100)
+        zpts = linspace(-sz*zR,sz*zR,100)
+        xx,zz = meshgrid(xpts,zpts)
+        if normalize:
+            norm = abs(self.umax)
+        else:
+            norm = 1
+        fpts = self.U(xx,0,zz)/norm # the fort intensity eval'd on the meshgrid
+        
+        cmap = plt.cm.get_cmap(color)
+        
+        plt.contourf(xpts/mu,zpts/mu,fpts, cmap=cmap)
+        plt.colorbar()
+        if atoms is True: # otherwise, just a dipole trap plot  
+            plt.scatter(xlist/mu,ylist/mu,color='red')
+        plt.xlabel("x")
+        plt.ylabel("z")
+#         plt.axes().set_aspect('equal')
+        plt.show()
 
 #### Optics
 
