@@ -1,0 +1,25 @@
+Laser frequencies
+ 780A: 2*pi*384226015203379.4
+ 780B: 2*pi*384232849885379.44
+ 480: 2*pi*625314831618150.4
+780A polarizabilities
+  5S1/2,f=2,mf=0:
+    scalar = 3.20346392953120E-34
+  5P3/2,f=3,mf=1:
+    scalar = 1.52739309640219E-34
+    vector = -3.817491143122172e-35
+    tensor = -4.581457685120631e-35
+  84D5/2:
+    ponderomotive: -5.379688415266064e-49
+480 polarizabilities
+  5S1/2,f=2,mf=0:
+    scalar = -2.90311524481040E-39
+  5P3/2,f=3,mf=1:
+    scalar = -4.82150951678205E-39
+    vector = 1.696626924053701e-40
+    tensor = 4.557481703934684e-40
+  84D5/2:
+    ponderomotive: -2.031108842032563e-49
+
+units are S.I.
+note that the vector and tensor terms here include the dependence on the mf.

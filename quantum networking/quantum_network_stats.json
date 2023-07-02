@@ -1,0 +1,107 @@
+{
+	"Moehring2007": 
+	{
+	  "platform": "ions",
+	  "species": "171Yb+",
+	  "rate": 0.002,
+	  "fidelity": 0.63,
+	  "node separation": 1,
+	  "wavelength": 1
+	},
+	"Matsukevich2008": {
+	  "platform": "ions",
+	  "species": "171Yb+",
+	  "rate": 0.026,
+	  "fidelity": 0.81,
+	  "node separation": 1,
+	  "wavelength": 1
+	},
+	"Ritter2012": {
+	  "platform": "atoms",
+	  "species": "87Rb",
+	  "rate": 100,
+	  "fidelity": 0.85,
+	  "node separation": 1,
+	  "wavelength": 1
+	},
+	"Hofmann2012": {
+	  "platform": "atoms",
+	  "species": "87Rb",
+	  "rate": 0.0094,
+	  "fidelity": 0.81,
+	  "node separation": 1,
+	  "wavelength": 1
+	},
+	"Slodicka2013": {
+	  "platform": "ions",
+	  "species": "138Ba+",
+	  "rate": 0.23,
+	  "fidelity": 0.64,
+	  "node separation": 1,
+	  "wavelength": 1
+	},
+	"Bernien2013": {
+	  "platform": "NVs",
+	  "species": "NA",
+	  "rate": 0.0017,
+	  "fidelity": 0.78,
+	  "node separation": 1,
+	  "wavelength": 1
+	},
+	"Hucul2015": {
+	  "platform": "ions",
+	  "species": "171Yb+",
+	  "rate": 4.5,
+	  "fidelity": 0.78,
+	  "node separation": 1,
+	  "wavelength": 1
+	},
+	"Delteil2016": {
+	  "platform": "NVs",
+	  "species": "NA",
+	  "rate": 2300,
+	  "fidelity": 0.55,
+	  "node separation": 1,
+	  "wavelength": 1
+	},
+	"Rosenfeld2017": {
+	  "platform": "atoms",
+	  "species": "87Rb",
+	  "rate": 0.03,
+	  "fidelity": 0.85,
+	  "node separation": 1,
+	  "wavelength": 1
+	},
+	"Stockill2017": {
+	  "platform": "qdots",
+	  "species": "InGaAs",
+	  "rate": 7300,
+	  "fidelity": 0.62,
+	  "node separation": 1,
+	  "wavelength": 1
+	},
+	"Stephenson2020": {
+	  "platform": "ions",
+	  "species": "88Sr+",
+	  "rate": 182,
+	  "fidelity": 0.94,
+	  "node separation": 1,
+	  "wavelength": 1
+	},
+	"Pompili2021": {
+	  "platform": "NVs",
+	  "species": "NA",
+	  "rate": 9,
+	  "fidelity": 0.81,
+	  "node separation": 1,
+	  "wavelength": 1
+	}
+	"Krutyanskiy2022": {
+	  "platform": "ions",
+	  "species": "40Ca+",
+	  "rate": 0.43,
+	  "fidelity": 0.882,
+	  "node separation": 520,
+	  "wavelength": 854
+	}
+}
