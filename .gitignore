@@ -8,3 +8,4 @@ Pipfile.lock
 HeatingSim_CY_20211111.ipynb
 LouisFarenci_2DAlignSimulation.ipynb
 *Louis*
+csv_analysis/trap_array_data/*.npy
