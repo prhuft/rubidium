@@ -1,5 +1,5 @@
 from math import pi
-from physconsts import *
+from utilities.physconsts import *
 
 ## Rb87 constants
 mRb = 1.4192261e-25 # [kg]

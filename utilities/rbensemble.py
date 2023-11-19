@@ -86,7 +86,7 @@ class RbEnsemble:
 		
 	def vpt(self):
 		""" Return a speed from Maxwell-Boltzmann dist. """
-		return sampling_maxboltzv(1,[0,1],self.temp)
+		return self.sampling_maxboltzv(1,[0,1],self.temp)
 
 	def xpt(self,domain):
 		""" Return a position from a flat dist by default. """

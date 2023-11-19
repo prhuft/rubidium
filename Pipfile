@@ -9,12 +9,13 @@ numpy = "*"
 arc-alkali-rydberg-calculator = "*"
 matplotlib = "*"
 sympy = "*"
-sklearn = "*"
 scikit-learn = "*"
 scipy = "*"
 datetime = "*"
 bibtexparser = "*"
 pylcp = "*"
+tifffile = "*"
+h5py = "*"
 
 [dev-packages]
 
