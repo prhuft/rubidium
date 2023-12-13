@@ -177,10 +177,53 @@ def coupling_f_to_j(jr,mjr,jp,fg,mg,q1,q2,deltap,I=I):
     
     # little_c lambda I,j,f,jj,ff = (-1)**(1+I+f+jj)*sqrt(2*f+1)*wigner_6j(j,1,f,ff,1,jj)
     pass
+
+def alpha1_f(state, omega, nlist, atom, I, printterms=False):
+    """
+    Returns the fine structure dynamic vector polarizability.
+    Mark's notes, eq. 9.12
+    
+    Args:
+        'state': list of quantum numbers n,l,j,f
+        'atom': an Atom object from the Alkali Rydberg Calculator module
+    Returns:
+        'alpha1': fine structure dynamic vector polarizability in S.I. units.
+    """
+    alpha1 = 0.0
+    terms = 0
+    
+    n_a, l_a, j_a, f_a = state
+
+    # program:
+    # - loop over levels from nmin to nmax
+    #  - loop over l
+    #   - loop over j
+
+    for n_b in nlist:
+        for l_b in range(n_b): # runs through n_b - 1, inclusive
+            for j_b in j3_from_j1j2(s, l_b): 
+
+                # triangle rule and dipole-allowed conditions
+                if abs(j_b - j_a) <= 1 and abs(l_b - l_a) == 1:
+
+                    w_ba = 2*pi*(eVToGHz(atom.getEnergy(n_b, l_b, j_b) \
+                                        - atom.getEnergy(n_a, l_a, j_a))*1e9)
+                    matelem = abs(atom.getReducedMatrixElementJ(n_a, l_a, j_a, n_b,
+                                                                l_b, j_b)*ee*a0)
+
+                    # Mark's notes, between Eqs. 9.12, 9.13
+                    alpha1[i] += (-(1/hbar)*sqrt(6/((2*j_a+1)*(j_a+1)*j_a))*
+                                (-1)**(j_a+j_b)*wigner_6j(j_a,1,j_b,1,j_a,1)*
+                                  w_ba*matelem**2/(w_ba**2 - w_arr[i]**2)) 
+                    
+                    terms += 1
+                    print(f"alpha1 ~= {alpha1[i]/(4*pi*e0*1e-30)} [Ang.^3], {terms} terms in sum")
+                    
+    return alpha1
     
 def alpha0_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=False):
     """
-    Returns the scalar polarizability for a hyperfine level |n,j,l,f>
+    Returns the scalar dynamic polarizability for a hyperfine level |n,j,l,f>
     for field with angular frequency omega. nlist is a list or iterable
     of the n values to use in the perturbative sum.
     
@@ -191,7 +234,7 @@ def alpha0_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
         'state': list of quantum numbers n,l,j,f
         'atom': an Atom object from the Alkali Rydberg Calculator module
     Returns:
-        'alpha0': scalar hyperfine polarizability in S.I. units.
+        'alpha0': scalar hyperfine dynamic polarizability in S.I. units.
     """
     alpha0 = 0
     terms = 0
@@ -235,7 +278,9 @@ def alpha0_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
                         matelemF = hf_reduced_f(f_a,j_a,f_b,j_b,I)*matelemJ
 
                         summand = (2/(3*hbar*(2*f_a+1)))*omega_ba*abs(matelemF)**2/(omega_ba**2 - omega**2) 
-                        alpha0 += summand*sqrt(2*f_b+1)
+                        alpha0 += summand*sqrt(2*f_b+1) 
+                        # I think this factor compensates for a difference in
+                        # how the ARC matrix element is defined compared to Mark's
 
                         terms += 1
                         if printterms:
@@ -243,12 +288,38 @@ def alpha0_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
                             
     return float(alpha0)
     
-def alpha1_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=False):
+def alpha1_hf(state, omega, nlist, atom, I, hf_states=hf_states):
     """
-    Returns the vector polarizability for a hyperfine level |n,j,l,f>
+    Returns the vector dynamic polarizability for a hyperfine level |n,j,l,f>
     for field with angular frequency omega. nlist is a list or iterable
     of the n values to use in the perturbative sum. This definition 
-    does not depend on mf. See Peters paper for full vector polarizability
+    does not depend on mf. See "Dynamical polarizability of atoms in arbitrary
+    light fields: general theory and application to cesium" by Rauschenbeutel.
+
+    Args:
+        'state': list of quantum numbers n,l,j,f
+        'atom': an Atom object from the Alkali Rydberg Calculator module
+    Returns:
+        'alpha1': vector hyperfine dynamic polarizability in S.I. units.
+    """
+    
+    n_a, l_a, j_a, f_a = state
+
+    # the prefactor is from eqs. 18 and 16, where I eliminate alpha^(1)_nJ which is
+    # the static polarizbility, in favor of alpha^v_nJ which is the dynamic one, 
+    # which is given by the function alpha1_f below
+    prefactor = (-1*(-1)**(j_a+I+f_a)*sqrt(2*f_a*(2*f_a+1)/(f_a+1))
+                 *wigner_6j(f_a,1,f_a,j_a,I,j_a)*sqrt((j_a+1)*(2*j_a+1)/(2*j_a)))
+    alpha1 = prefactor*alpha1_f(state, omega, nlist, atom, I)
+                    
+    return alpha1
+    
+def alpha2_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=False):
+    """
+    Returns the tector polarizability for a hyperfine level |n,j,l,f>
+    for field with angular frequency omega. nlist is a list or iterable
+    of the n values to use in the perturbative sum. This definition 
+    does not depend on mf. See Peters paper for full tensor polarizability
     term. 
     
     This function uses the hyperfine level frequencies for levels up to 
@@ -258,9 +329,9 @@ def alpha1_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
         'state': list of quantum numbers n,l,j,f
         'atom': an Atom object from the Alkali Rydberg Calculator module
     Returns:
-        'alpha1': vector hyperfine polarizability in S.I. units.
+        'alpha2': tensor hyperfine polarizability in S.I. units.
     """
-    alpha1 = 0
+    alpha2 = 0
     terms = 0
     
     n_a, l_a, j_a, f_a = state
@@ -286,33 +357,32 @@ def alpha1_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
 
                     except KeyError: # ignore the hf shift energy
                         freq_from_dict = False
-                        omega_ba = 2*pi*abs((eVToGHz(atom.getEnergy(n_b, l_b, j_b) 
+                        omega_ba = 2*pi*((eVToGHz(atom.getEnergy(n_b, l_b, j_b) 
                                      - atom.getEnergy(n_a, l_a, j_a))*1e9))
 
                     matelemJ = atom.getReducedMatrixElementJ(n_a, l_a, j_a, n_b, l_b, j_b)*ee*a0
     #                 print(f"< n={n_a}, l={l_a}, j={j_a} | x | n'={n_b}, l'={l_b}, j'={j_b} >")
 
                     for f_b in j3_from_j1j2(I, j_b):
-                        
-                        if abs(f_b - f_a) <=1:
-                            if freq_from_dict:
-                                omega_ba = 2*pi*abs(hf_states[n_b][l_b][j_b][f_b] - hf_states[n_a][l_a][j_a][f_a])*1e9
 
-                            matelemF = hf_reduced_f(f_a,j_a,f_b,j_b,I)*matelemJ
+                        if freq_from_dict:
+                            omega_ba = 2*pi*(hf_states[n_b][l_b][j_b][f_b] - hf_states[n_a][l_a][j_a][f_a])*1e9
 
-                            summand = ((-1)**(f_a+f_b+1)*sqrt((6*f_a*(2*f_a+1))/(f_a+1))*wigner_6j(1,1,1,f_a,f_a,f_b)*
-                                        (1/(hbar*(2*f_a+1)))*omega_ba*abs(matelemF)**2/(omega_ba**2 - omega**2))
-                            alpha1 += summand
+                        matelemF = hf_reduced_f(f_a,j_a,f_b,j_b,I)*matelemJ
 
-                            terms += 1
-                            if printterms:
-                                print(f"alpha1 ~= {alpha1/(4*pi*e0*1e-30)} [Ang.^3], {terms} terms in sum")
+#                         (-1)^{F+F'}\sqrt{\frac{40F(2F+1)(2F-1)}{3(F+1)(2F+3)}}S_{F,F,F'}^{1,1,2}
+                        summand = 1/hbar*((-1)**(f_a+f_b)*sqrt(40*f_a*(2*f_a-1)/(3*(f_a+1)*(2*f_a+3)*(2*f_a+1)))*wigner_6j(f_a,1,f_b,1,f_a,2)*omega_ba*abs(matelemF)**2/(omega_ba**2 - omega**2))
+                        alpha2 += summand
+
+                        terms += 1
+                        if printterms:
+                            print(f"alpha2 ~= {alpha2/(4*pi*e0*1e-30)} [Ang.^3], {terms} terms in sum")
                     
-    return float(alpha1)
+    return float(alpha2)
     
-def alpha2_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=False):
+def alpha2_hf_possiblywrong(state, omega, nlist, atom, I, hf_states=hf_states, printterms=False):
     """
-    Returns the tector polarizability for a hyperfine level |n,j,l,f>
+    Returns the tensor dynamic polarizability for a hyperfine level |n,j,l,f>
     for field with angular frequency omega. nlist is a list or iterable
     of the n values to use in the perturbative sum. This definition 
     does not depend on mf. See Peters paper for full tensor polarizability
@@ -325,7 +395,7 @@ def alpha2_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
         'state': list of quantum numbers n,l,j,f
         'atom': an Atom object from the Alkali Rydberg Calculator module
     Returns:
-        'alpha2': tensor hyperfine polarizability in S.I. units.
+        'alpha2': tensor dynamic hyperfine polarizability in S.I. units.
     """
     alpha2 = 0
     terms = 0
