@@ -208,7 +208,7 @@ def alpha0_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
         for l_b in range(n_b): # runs through n_b - 1, inclusive
             for j_b in j3_from_j1j2(s, l_b): 
 
-                # triangle rule and dipole-allowed conditions
+                # triangle rule and -allowed conditions
                 if abs(j_b - j_a) <= 1 and abs(l_b - l_a) == 1:
 
                     try: 
@@ -219,28 +219,26 @@ def alpha0_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
 
                     except KeyError: # ignore the hf shift
                         freq_from_dict = False
-                        # had abs(), removed
-                        omega_ba = 2*pi*(eVToGHz(atom.getEnergy(n_b, l_b, j_b) 
-                                     - atom.getEnergy(n_a, l_a, j_a))*1e9)
+                        omega_ba = 2*pi*((eVToGHz(atom.getEnergy(n_b, l_b, j_b) 
+                                     - atom.getEnergy(n_a, l_a, j_a))*1e9))
 
                     matelemJ = atom.getReducedMatrixElementJ(n_a, l_a, j_a, n_b, l_b, j_b)*ee*a0
     #                 print(f"< n={n_a}, l={l_a}, j={j_a} | x | n'={n_b}, l'={l_b}, j'={j_b} >")
 
                     for f_b in j3_from_j1j2(I, j_b):
 
-                        # had abs(), removed
                         if freq_from_dict:
                             omega_ba = 2*pi*(hf_states[n_b][l_b][j_b][f_b] - hf_states[n_a][l_a][j_a][f_a])*1e9
 
                         matelemF = hf_reduced_f(f_a,j_a,f_b,j_b,I)*matelemJ
-
-                        summand = (2/(3*hbar*(2*f_a+1)))*omega_ba*abs(matelemF)**2/(omega_ba**2 - omega**2) 
-                        alpha0 += summand*sqrt(2*f_b+1)
+                        #*2*(f_a+1)
+                        summand = (2/(3*hbar*2*(f_a+1)))*omega_ba*abs(matelemF)**2/(omega_ba**2 - omega**2) 
+                        alpha0 += summand
 
                         terms += 1
                         if printterms:
                             print(f"alpha0 ~= {alpha0/(4*pi*e0*1e-30)} [Ang.^3], {terms} terms in sum")
-                            
+                    
     return float(alpha0)
     
 def alpha1_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=False):
@@ -353,9 +351,8 @@ def alpha2_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
 
                     except KeyError: # ignore the hf shift energy
                         freq_from_dict = False
-                        # was abs(), removed
-                        omega_ba = 2*pi*abs(
-                            eVToGHz(atom.getEnergy(n_b, l_b, j_b) - atom.getEnergy(n_a, l_a, j_a)))*1e9
+                        omega_ba = 2*pi*((eVToGHz(atom.getEnergy(n_b, l_b, j_b) 
+                                     - atom.getEnergy(n_a, l_a, j_a))*1e9))
 
                     matelemJ = atom.getReducedMatrixElementJ(n_a, l_a, j_a, n_b, l_b, j_b)*ee*a0
     #                 print(f"< n={n_a}, l={l_a}, j={j_a} | x | n'={n_b}, l'={l_b}, j'={j_b} >")
@@ -363,14 +360,12 @@ def alpha2_hf(state, omega, nlist, atom, I, hf_states=hf_states, printterms=Fals
                     for f_b in j3_from_j1j2(I, j_b):
 
                         if freq_from_dict:
-                            # was abs, removed
-                            omega_ba = 2*pi*abs(hf_states[n_b][l_b][j_b][f_b] - hf_states[n_a][l_a][j_a][f_a])*1e9
+                            omega_ba = 2*pi*(hf_states[n_b][l_b][j_b][f_b] - hf_states[n_a][l_a][j_a][f_a])*1e9
 
                         matelemF = hf_reduced_f(f_a,j_a,f_b,j_b,I)*matelemJ
 
 #                         (-1)^{F+F'}\sqrt{\frac{40F(2F+1)(2F-1)}{3(F+1)(2F+3)}}S_{F,F,F'}^{1,1,2}
-                        summand = ((-1)**(f_a+f_b)*sqrt(40*f_a*(2*f_a+1)*(2*f_a-1)/(3*(f_a+1)*(2*f_a+3)))*wigner_6j(1,1,2,f_a,f_a,f_b)*
-                                    (1/(hbar*(2*f_a+1)))*omega_ba*abs(matelemF)**2/(omega_ba**2 - omega**2))
+                        summand = 1/hbar*((-1)**(f_a+f_b)*sqrt(40*f_a*(2*f_a-1)/(3*(f_a+1)*(2*f_a+3)*(2*f_a+1)))*wigner_6j(f_a,1,f_b,1,f_a,2)*omega_ba*abs(matelemF)**2/(omega_ba**2 - omega**2))
                         alpha2 += summand
 
                         terms += 1
