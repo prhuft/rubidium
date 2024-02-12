@@ -16,6 +16,7 @@ bibtexparser = "*"
 pylcp = "*"
 tifffile = "*"
 h5py = "*"
+kdepy = "*"
 
 [dev-packages]
 
