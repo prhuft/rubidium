@@ -17,6 +17,8 @@ pylcp = "*"
 tifffile = "*"
 h5py = "*"
 kdepy = "*"
+colorspacious = "*"
+jupyterlab = "*"
 
 [dev-packages]
 

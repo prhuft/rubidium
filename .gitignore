@@ -11,3 +11,4 @@ LouisFarenci_2DAlignSimulation.ipynb
 *Louis*
 csv_analysis/trap_array_data/*.npy
 pylcp/*checkpoints*/*
+lab_analysis/network_experiment/*.csv
